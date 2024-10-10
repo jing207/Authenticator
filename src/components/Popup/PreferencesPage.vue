@@ -43,7 +43,7 @@
       @change="requireContextMenuPermission()"
       v-if="isSupported"
     />
-    <div class="control-group" v-show="encryption.getEncryptionStatus()">
+    <div class="control-group" v-show="!!defaultEncryption">
       <label class="combo-label">{{ i18n.autolock }}</label>
       <input
         class="input"
@@ -63,6 +63,7 @@
 <script lang="ts">
 import Vue from "vue";
 import { isFirefox, isSafari } from "../../browser";
+import { UserSettings } from "../../models/settings";
 
 export default Vue.extend({
   computed: {
@@ -88,6 +89,10 @@ export default Vue.extend({
       },
       set(smartFilter: boolean) {
         this.$store.commit("menu/setSmartFilter", smartFilter);
+        this.$store.commit(
+          "notification/alert",
+          this.i18n.activate_auto_filter
+        );
       },
     },
     enableContextMenu: {
@@ -106,8 +111,8 @@ export default Vue.extend({
         this.$store.commit("menu/setTheme", theme);
       },
     },
-    encryption(): EncryptionInterface {
-      return this.$store.state.accounts.encryption;
+    defaultEncryption(): string {
+      return this.$store.state.accounts.defaultEncryption;
     },
     enforceAutolock() {
       return this.$store.state.menu.enforceAutolock;
@@ -144,9 +149,15 @@ export default Vue.extend({
   },
   data() {
     return {
-      newStorageLocation:
-        this.$store.state.menu.storageArea || localStorage.storageLocation,
+      newStorageLocation: "",
     };
+  },
+  created() {
+    UserSettings.updateItems().then(() => {
+      this.newStorageLocation =
+        this.$store.state.menu.storageArea ||
+        UserSettings.items.storageLocation;
+    });
   },
   methods: {
     popOut() {
@@ -157,8 +168,8 @@ export default Vue.extend({
         windowType = "panel";
       }
       chrome.windows.create({
-        url: chrome.extension.getURL("view/popup.html?popup=true"),
-        type: windowType,
+        url: chrome.runtime.getURL("view/popup.html?popup=true"),
+        type: windowType as chrome.windows.createTypeEnum,
         height: window.innerHeight,
         width: window.innerWidth,
       });

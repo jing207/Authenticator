@@ -3,6 +3,7 @@ import { Runner, Test } from "mocha";
 interface MochaTestResults {
   total?: number;
   tests?: StrippedTestResults[];
+  completed?: boolean;
 }
 
 interface StrippedTestResults {
@@ -23,9 +24,9 @@ export function MochaReporter(runner: Runner) {
   const tests: Test[] = [];
 
   runner.on("start", () => {
-    // eslint-disable-next-line @typescript-eslint/camelcase
     window.__mocha_test_results__ = {};
     window.__mocha_test_results__.total = runner.total;
+    window.__mocha_test_results__.completed = false;
   });
 
   runner.on("end", () => {
@@ -38,9 +39,9 @@ export function MochaReporter(runner: Runner) {
         status: test.state,
       };
     };
-    // eslint-disable-next-line @typescript-eslint/ban-ts-ignore
-    // @ts-ignore typings are wrong
+    // @ts-expect-error typings are wrong
     window.__mocha_test_results__.tests = tests.map(strip);
+    window.__mocha_test_results__.completed = true;
 
     const event = new Event("testsComplete", { bubbles: true });
     window.dispatchEvent(event);
